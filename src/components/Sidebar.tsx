@@ -9,6 +9,7 @@ import {
   Wand2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface SidebarProps {
   activeTab: string;
@@ -50,10 +51,13 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         ))}
       </nav>
       
-      <button className="tool-button w-16 mt-auto">
-        <Settings className="w-5 h-5" />
-        <span className="text-xs">设置</span>
-      </button>
+      <div className="flex flex-col gap-2 mt-auto">
+        <ThemeToggle />
+        <button className="tool-button w-16">
+          <Settings className="w-5 h-5" />
+          <span className="text-xs">设置</span>
+        </button>
+      </div>
     </aside>
   );
 }
