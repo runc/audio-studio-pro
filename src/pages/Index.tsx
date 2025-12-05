@@ -49,6 +49,15 @@ const Index = () => {
     setActiveTab("subtitle");
   }, [toast]);
 
+  const handleURLImport = useCallback((url: string) => {
+    setVideoUrl(url);
+    toast({
+      title: "URL 导入成功",
+      description: "已从 URL 导入媒体",
+    });
+    setActiveTab("subtitle");
+  }, [toast]);
+
   const handleASRStart = useCallback(() => {
     setIsProcessing(true);
     toast({
@@ -128,6 +137,7 @@ const Index = () => {
               <ToolPanel
                 activeTab={activeTab}
                 onFileUpload={handleFileUpload}
+                onURLImport={handleURLImport}
                 onASRStart={handleASRStart}
                 onTTSGenerate={handleTTSGenerate}
                 isProcessing={isProcessing}
