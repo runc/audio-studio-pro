@@ -8,7 +8,10 @@ import {
   Volume2,
   Download,
   Sparkles,
-  Languages
+  Languages,
+  Link,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -18,6 +21,7 @@ import { cn } from "@/lib/utils";
 interface ToolPanelProps {
   activeTab: string;
   onFileUpload: (file: File) => void;
+  onURLImport?: (url: string) => void;
   onASRStart: () => void;
   onTTSGenerate: (text: string) => void;
   isProcessing: boolean;
@@ -26,6 +30,7 @@ interface ToolPanelProps {
 export function ToolPanel({ 
   activeTab, 
   onFileUpload, 
+  onURLImport,
   onASRStart,
   onTTSGenerate,
   isProcessing 
@@ -33,6 +38,9 @@ export function ToolPanel({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [ttsText, setTtsText] = useState("");
   const [selectedVoice, setSelectedVoice] = useState("female-1");
+  const [isUploadExpanded, setIsUploadExpanded] = useState(true);
+  const [importUrl, setImportUrl] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
 
   const voices = [
     { id: "female-1", name: "晓晓", gender: "女", lang: "中文" },
@@ -43,38 +51,115 @@ export function ToolPanel({
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    setIsDragging(false);
     const file = e.dataTransfer.files[0];
     if (file) onFileUpload(file);
   };
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleURLImport = () => {
+    if (importUrl.trim() && onURLImport) {
+      onURLImport(importUrl.trim());
+      setImportUrl("");
+    }
+  };
+
   const renderUploadPanel = () => (
     <div className="p-4 h-full flex flex-col">
-      <h3 className="font-semibold text-foreground mb-4">导入媒体</h3>
-      
-      <div
-        className="flex-1 border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center gap-4 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer"
-        onDrop={handleDrop}
-        onDragOver={(e) => e.preventDefault()}
-        onClick={() => fileInputRef.current?.click()}
+      <button
+        onClick={() => setIsUploadExpanded(!isUploadExpanded)}
+        className="flex items-center justify-between w-full mb-4 group"
       >
-        <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center">
-          <Upload className="w-8 h-8 text-muted-foreground" />
+        <h3 className="font-semibold text-foreground">导入媒体</h3>
+        <div className="w-6 h-6 rounded-md bg-muted flex items-center justify-center group-hover:bg-muted/80 transition-colors">
+          {isUploadExpanded ? (
+            <ChevronUp className="w-4 h-4 text-muted-foreground" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-muted-foreground" />
+          )}
         </div>
-        <div className="text-center">
-          <p className="text-foreground font-medium">拖放文件到这里</p>
-          <p className="text-sm text-muted-foreground mt-1">或点击选择文件</p>
-        </div>
-        <div className="flex gap-2 mt-2">
-          <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-            <FileVideo className="w-3 h-3" />
-            MP4, MOV
+      </button>
+      
+      {isUploadExpanded ? (
+        <div className="flex-1 flex flex-col gap-4">
+          {/* 拖拽上传区域 */}
+          <div
+            className={cn(
+              "flex-1 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-3 transition-all cursor-pointer min-h-[180px]",
+              isDragging 
+                ? "border-primary bg-primary/10" 
+                : "border-border hover:border-primary/50 hover:bg-primary/5"
+            )}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <div className={cn(
+              "w-14 h-14 rounded-xl flex items-center justify-center transition-colors",
+              isDragging ? "bg-primary/20" : "bg-muted"
+            )}>
+              <Upload className={cn(
+                "w-7 h-7 transition-colors",
+                isDragging ? "text-primary" : "text-muted-foreground"
+              )} />
+            </div>
+            <div className="text-center">
+              <p className="text-foreground font-medium">
+                {isDragging ? "释放以上传" : "拖放文件到这里"}
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">或点击选择文件</p>
+            </div>
+            <div className="flex gap-2">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                <FileVideo className="w-3 h-3" />
+                MP4, MOV
+              </div>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                <FileAudio className="w-3 h-3" />
+                MP3, WAV
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-            <FileAudio className="w-3 h-3" />
-            MP3, WAV
+          
+          {/* URL 导入 */}
+          <div className="space-y-2">
+            <label className="text-sm text-muted-foreground flex items-center gap-1.5">
+              <Link className="w-3.5 h-3.5" />
+              从 URL 导入
+            </label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="输入媒体文件 URL..."
+                value={importUrl}
+                onChange={(e) => setImportUrl(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleURLImport()}
+                className="flex-1"
+              />
+              <Button 
+                variant="secondary" 
+                size="sm"
+                onClick={handleURLImport}
+                disabled={!importUrl.trim()}
+              >
+                导入
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-sm text-muted-foreground">点击展开导入区域</p>
+        </div>
+      )}
       
       <input
         ref={fileInputRef}
